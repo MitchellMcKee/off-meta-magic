@@ -20,12 +20,13 @@ data = {
 # Currently fetches all tournament Rog Silas Decks since 9/1/22
 entries = json.loads(requests.post(base_url + 'req', json=data, headers=headers).text)
 
-
+# Returns all cards that show up between 1-5 decks in all Rog Silas tournament Decks
 def filter_decklists():
     result_dict = {}
     decks = entries[:40]
+
+    # use decks for faster testing until data is cached on S3
     for entry in decks:
-        print(len(result_dict))
         if 'moxfield.com/decks/' in entry['decklist']:
             deckId = entry['decklist'].split('decks/')[1]
             mox_req =  fetch_mox_list(deckId)
@@ -35,14 +36,8 @@ def filter_decklists():
                 all_card_names = collect_values(card_object, "name")
                 result_dict[mox_public_url] = all_card_names
     result_dict = invert_dict_of_lists(result_dict)
+    result_dict = {key: value for key, value in result_dict.items() if len(value) <= 5}
     return result_dict
-
-def fetch_all_commanders():
-    response = requests.get(base_url + 'get_commanders')
-    if response.status_code == 200:
-        return response.json()  # Or response.text for plain text
-    else:
-        return None
     
 def fetch_mox_list(deckId):
     response = requests.get(mox_base_url + mox_path + deckId)
@@ -64,20 +59,9 @@ def collect_values(data, key_to_find):
             values.extend(collect_values(item, key_to_find))
     return values
 
-
-
-def count_unique_items_in_lists(list_of_lists):
-    # Combine all lists into a single list
-    combined_list = [item for sublist in list_of_lists for item in sublist]
-    
-    # Count occurrences of each unique item
-    item_counts = Counter(combined_list)
-    
-    return dict(item_counts)
-
 def invert_dict_of_lists(input_dict):
     """
-    Takes a dictionary where the values are lists and returns a new dictionary.
+    Takes a dictionary with lists as values and returns a new dictionary.
     The keys in the new dictionary are the unique values from the lists,
     and the corresponding value is a list of keys from the original dictionary 
     that contained that unique value.
@@ -100,6 +84,13 @@ def invert_dict_of_lists(input_dict):
                 result[value].append(key)  # Append the key to the list
     
     return result
+
+def fetch_all_commanders():
+    response = requests.get(base_url + 'get_commanders')
+    if response.status_code == 200:
+        return response.json()  # Or response.text for plain text
+    else:
+        return None
 
 @app.route('/')
 def home():
