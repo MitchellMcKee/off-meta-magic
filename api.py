@@ -23,9 +23,10 @@ entries = json.loads(requests.post(base_url + 'req', json=data, headers=headers)
 # Returns all cards that show up between 1-5 decks in all Rog Silas tournament Decks
 def filter_decklists():
     result_dict = {}
-    decks = entries[:40]
+    decks = entries[:15]
 
-    # use decks for faster testing until data is cached on S3
+    # loop through decks for faster testing until data is cached on S3
+    # loop through entries for all decks (Takes about 3m 42s to run) 
     for entry in decks:
         if 'moxfield.com/decks/' in entry['decklist']:
             deckId = entry['decklist'].split('decks/')[1]
