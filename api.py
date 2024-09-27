@@ -1,16 +1,21 @@
 from flask import Flask, jsonify
+from collections import Counter
 import json
 import requests
 
 base_url = "https://edhtop16.com/api/"
 mox_base_url = "https://api2.moxfield.com/"
+mox_path = "v3/decks/all/"
 headers = {'Content-Type': 'application/json', 'Accept': 'application/json'}
-dataMM = {'tournamentName': {'$regex': r'Mox Masters (January|February|March|April|May|June|July|August|September|October|November|December) \d{1,2}'}}
 
 app = Flask(__name__)
 
 data = {
-    'commander': 'The First Sliver'
+    'commander': 'Rograkh, Son of Rohgahh / Silas Renn, Seeker Adept',
+    'tourney_filter': {
+        'size': {'$gte': 1},
+        'dateCreated': {'$gte': 1695774198} # September 1st 2022
+    }
 }
 entries = json.loads(requests.post(base_url + 'req', json=data, headers=headers).text)
 
@@ -21,6 +26,12 @@ def fetch_all_commanders():
     else:
         return None
     
+def fetch_moxfield_list(deckId):
+    response = requests.get(mox_base_url + mox_path + deckId)
+    if response.status_code == 200:
+        return response.json()
+    else:
+        return None
 
 # Function to collect all values of a specified key
 def collect_values(data, key_to_find):
@@ -37,16 +48,28 @@ def collect_values(data, key_to_find):
 
 def fetch_all_decklists():
     result = []
-    decks = entries[:5]
+    decks = entries[:10]
     for entry in decks:
         if 'moxfield.com/decks/' in entry['decklist']:
             deckId = entry['decklist'].split('decks/')[1]
-            path = 'v3/decks/all/'
-            moxReq =  requests.get(mox_base_url + path + deckId, json=dataMM, headers=headers).json()
-            cardObject = moxReq['boards']['mainboard']['cards']
-            allCardNames = collect_values(cardObject, "name")
-            result.append(allCardNames)
+            mox_req =  fetch_moxfield_list(deckId)
+            if mox_req != None:
+                card_object = mox_req['boards']['mainboard']['cards']
+                all_card_names = collect_values(card_object, "name")
+                result.append(all_card_names)
+    result = count_unique_items_in_lists(result)
+    result = {item: count for item, count in result.items() if count < 5}
+    
     return result
+
+def count_unique_items_in_lists(list_of_lists):
+    # Combine all lists into a single list
+    combined_list = [item for sublist in list_of_lists for item in sublist]
+    
+    # Count occurrences of each unique item
+    item_counts = Counter(combined_list)
+    
+    return dict(item_counts)
 
 @app.route('/')
 def home():
