@@ -73,7 +73,7 @@ def get_extract_ids_from_url(url):
     else:
         return ''
 
-def extract_moxfield_info(moxfield_list):
+def extract_moxfield_info(moxfield_list, id):
     result = []
     if moxfield_list != None:
         mox_public_url = moxfield_list['publicUrl']
@@ -87,7 +87,7 @@ def extract_moxfield_info(moxfield_list):
                 cardObj = {
                     'commanders': commander_card_names,
                     'cardName': card,
-                    'url': mox_public_url
+                    'moxfieldDeckId': id
                 }
                 result.append(cardObj)
 
@@ -126,7 +126,7 @@ def home():
         moxfield_lists = []
         for index, id in enumerate(extract_ids):
             moxfield_response = fetch_moxfield_list(id)
-            extract = extract_moxfield_info(moxfield_response)
+            extract = extract_moxfield_info(moxfield_response, id)
             if extract:
                 moxfield_lists.extend(extract)
                 print(index)
