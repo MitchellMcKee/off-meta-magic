@@ -15,11 +15,20 @@ topdeck_req_body = {
     'game': 'Magic: The Gathering',
     'format': 'EDH',
     "participantMin": 24,
-    "participantMax": 24
+    "participantMax": 32
 }
 
 moxfield_base_url = "https://api2.moxfield.com/"
 mox_path = "v3/decks/all/"
+
+class Commander:
+    def __init__(self, commanders, card_name, moxfield_deck_id):
+        self.commanders = commanders
+        self.card_name = card_name
+        self.moxfield_deck_id = moxfield_deck_id
+
+    def __repr__(self):
+        return f"Deck(commanders={self.commanders}, cardName='{self.card_name}', moxfieldDeckId='{self.moxfield_deck_id}')"
 
 def fetch_topdeck_lists():
     response = requests.post(topdeck_base_url + '/v2/tournaments', json=topdeck_req_body, headers=topdeck_auth_header)
@@ -35,7 +44,7 @@ def fetch_moxfield_list(deckId):
     else:
         return None
     
-# Function to collect all values of a specified key
+# Collects all values of a specified key
 def collect_values(data, key_to_find):
     values = []
     if isinstance(data, dict):
@@ -48,6 +57,7 @@ def collect_values(data, key_to_find):
             values.extend(collect_values(item, key_to_find))
     return values
 
+# finds all values for a given key of 
 def find_values_by_key(obj, target_key):
     values = []
     
@@ -76,44 +86,59 @@ def get_extract_ids_from_url(url):
 def extract_moxfield_info(moxfield_list, id):
     result = []
     if moxfield_list != None:
-        mox_public_url = moxfield_list['publicUrl']
         commanders = moxfield_list['boards']['commanders']['cards']
         commander_card_names = find_values_by_key(commanders, "name")
+        # standardize order of partners (alphabetically)
+        commander_card_names = sorted(commander_card_names)
         mainboard = moxfield_list['boards']['mainboard']['cards']
-        mainboard_card_names = find_values_by_key(mainboard, "name")
-        
+        mainboard_card_names = find_values_by_key(mainboard, "name")  
         if len(mainboard_card_names) != 0:
             for card in mainboard_card_names:
-                cardObj = {
-                    'commanders': commander_card_names,
-                    'cardName': card,
-                    'moxfieldDeckId': id
-                }
-                result.append(cardObj)
-
+                commander_obj = Commander(commander_card_names, card, id)
+                result.append(commander_obj)
     return result
 
-def write_to_json_and_csv(data):
-    # Specify the JSON file name
-    json_file = "output.json"
+def map_commanders_to_cards(data):
+    result = {}
+    for entry in data:
+        # Get the cardName and moxfieldDeckId from the entry
+        card_name = entry.card_name
+        moxfield_deck_id = entry.moxfield_deck_id
+        
+        # Use the commander directly as a key
+        commander_arr = entry.commanders
+        commander = ''
+        if(len(commander_arr) > 1):
+            commander = "+".join(commander_arr)
+        else:
+            commander = commander_arr[0]
+        
+        # If the commander is not in the result, initialize with an empty list
+        if commander not in result:
+            result[commander] = []
+        
+        # Append the tuple (cardName, moxfieldDeckId) to the list for this commander
+        result[commander].append((card_name, moxfield_deck_id))
+    return result
 
-    # Write data to the JSON file
-    with open(json_file, 'w') as file:
-        json.dump(data, file, indent=4) 
+def get_unique_second_values(tuples_list):
+    result = {}
+    print(tuples_list)
+    for first_value, second_value in tuples_list:
+        if first_value not in result:
+            result[first_value] = set()
+        result[first_value].add(second_value)
 
-    # Specify the CSV file name
-    csv_file = "output.csv"
+    for key in result:
+        result[key] = list(result[key])
+    return result
 
-    # Get the fieldnames (keys) from the first dictionary in the list
-    fieldnames = data[0].keys()
+def write_to_json(data, filename):
+    json_file_path = filename + '.json'
+    with open(json_file_path, mode='w') as file:
+        json.dump(data, file, indent=4)
 
-    # Write the JSON data to a CSV file
-    with open(csv_file, mode='w', newline='') as file:
-        writer = csv.DictWriter(file, fieldnames=fieldnames)
-        writer.writeheader()
-        writer.writerows(data)
-
-
+# Returns all instances of cards used in cEDH
 @app.route('/')
 def home():
     print('fetching top deck...')
@@ -131,17 +156,24 @@ def home():
                 moxfield_lists.extend(extract)
                 print(index)
                 print(len(extract_ids))
-                write_to_json_and_csv(moxfield_lists)
 
-        return moxfield_lists
+        commander_list = map_commanders_to_cards(moxfield_lists)
+        result = {}
+        for commander_object in commander_list.items():
+            print(commander_object)
+            result[commander_object[0]] = get_unique_second_values(commander_object[1])
+             
+        write_to_json(result, 'output')
+        return result
     else:
         return jsonify({'error': 'Failed to fetch data'}), 500
 
 # -------------------------------------------------------------
 
+# Returns the source of truth
 @app.route('/top')
 def commanders():
-    data = fetch_topdeck_lists()  # Store the GET request result
+    data = fetch_topdeck_lists()
     return data
 
 
