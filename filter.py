@@ -43,11 +43,11 @@ def get_all_image_links():
     result = {}
     for obj in all_cards:
         # Extract the name as the key and the 'normal' field from image_uris as the value
-        if 'name' in obj and 'image_uris' in obj and 'normal' in obj['image_uris']:
-            result[obj['name']] = obj['image_uris']['normal']
+        if 'name' in obj and 'image_uris' in obj and 'border_crop' in obj['image_uris']:
+            result[obj['name']] = obj['image_uris']['border_crop']
         else:
             try:
-                result[obj['name']] = obj['card_faces'][0]['image_uris']['normal'], obj['card_faces'][1]['image_uris']['normal']
+                result[obj['name']] = obj['card_faces'][0]['image_uris']['border_crop'], obj['card_faces'][1]['image_uris']['border_crop']
             except:
                 print('Failed to retrieve image link for ' + obj['name'])
 
@@ -81,11 +81,11 @@ def find_values_by_key(obj, key_name):
     return values
 
 # Open the JSON file and load its data into a Python object
-with open('./mocks/Jeska, Thrice Reborn+Tymna the Weaver.json', 'r') as file:
+with open('./mocks/Talion, the Kindly Lord.json', 'r') as file:
     data = json.load(file)
 
 filtered_data = filter_lists_by_length(data)
 card_object_list = create_card_list(filtered_data)
 pretty_list = json.dumps(card_object_list, indent=4)
 print(pretty_list)
-write_to_json(card_object_list, './mocks/Jeska, Thrice Reborn+Tymna the Weaver')
+write_to_json(card_object_list, './mocks/Talion, the Kindly Lord')
