@@ -33,15 +33,15 @@ def create_card_list(data):
     
     return result
 
-def get_all_image_links():
+def get_all_image_links(image_type):
     result = {}
     for obj in all_cards:
         # Check if Card has 2 faces
-        if 'name' in obj and 'image_uris' in obj and 'border_crop' in obj['image_uris']:
-            result[obj['name']] = obj['image_uris']['border_crop']
+        if 'name' in obj and 'image_uris' in obj and image_type in obj['image_uris']:
+            result[obj['name']] = obj['image_uris'][image_type]
         else:
             try:
-                result[obj['name']] = obj['card_faces'][0]['image_uris']['border_crop'], obj['card_faces'][1]['image_uris']['border_crop']
+                result[obj['name']] = obj['card_faces'][0]['image_uris'][image_type], obj['card_faces'][1]['image_uris'][image_type]
             except:
                 print('Failed to retrieve image link for ' + obj['name'])
 
@@ -74,7 +74,8 @@ with open('./bulk/oracle-cards.json', 'r') as file:
 with open('./bulk/output.json', 'r') as file:
     all_decklists = json.load(file)
 
-all_image_links = get_all_image_links()
+all_image_links = get_all_image_links('border_crop')
+all_art_links = get_all_image_links('art_crop')
 
 dircetory_path = './mocks/raw'
 filenames = []
@@ -109,16 +110,14 @@ for file in filenames:
     commander_names.append(commander_with_count)
 
 result = []
+
 for commander in commander_names:
     cmdr = commander['name']
-    if cmdr == 'Etali, Primal Conqueror':
-        cmdr = 'Etali, Primal Conqueror // Etali, Primal Sickness'
-
     if '+' in cmdr:
         partners = cmdr.split('+')
-        image_link = [all_image_links[partners[0]], all_image_links[partners[1]]]
+        image_link = [all_art_links[partners[0]], all_art_links[partners[1]]]
     else:
-        image_link = all_image_links[cmdr]
+        image_link = all_art_links[cmdr]
     
     if isinstance(image_link, str):
         image_link = [image_link]
