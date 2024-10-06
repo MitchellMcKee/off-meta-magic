@@ -1,4 +1,5 @@
 import json
+import os
 
 def filter_lists_by_length(input_dict):
     # Create a new dictionary to store the filtered data
@@ -80,12 +81,27 @@ def find_values_by_key(obj, key_name):
     search_dict(obj)
     return values
 
-# Open the JSON file and load its data into a Python object
-with open('./mocks/Talion, the Kindly Lord.json', 'r') as file:
-    data = json.load(file)
+dircetory_path = './mocks/raw'
 
-filtered_data = filter_lists_by_length(data)
-card_object_list = create_card_list(filtered_data)
-pretty_list = json.dumps(card_object_list, indent=4)
-print(pretty_list)
-write_to_json(card_object_list, './mocks/Talion, the Kindly Lord')
+filenames = []
+
+try:
+    names = os.listdir(dircetory_path)
+    filenames = names
+except:
+    print(f"'{dircetory_path}' does not exist")
+
+for file in filenames:
+    with open(f"./mocks/raw/{file}", 'r') as file:
+        data = json.load(file)
+    filtered_data = filter_lists_by_length(data)
+    card_object_list = create_card_list(filtered_data)
+    
+    # print the data in a readable format in the console 
+    # pretty_list = json.dumps(card_object_list, indent=4)
+    # print(pretty_list)
+
+    # remove file path and json extension from the name
+    name_of_file = file.name[12:].split('.json')[0]
+    write_to_json(card_object_list, f"./mocks/{name_of_file}")
+    print(f"./mocks/{name_of_file}")

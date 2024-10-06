@@ -97,7 +97,6 @@ def extract_moxfield_info(moxfield_list, id):
                 result.append(commander_obj)
     return result
 
-# takes
 def map_commanders_to_cards(data: list[CardAndCommander]) -> Dict:
     result = {}
     for entry in data:

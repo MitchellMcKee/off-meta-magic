@@ -1,4 +1,5 @@
 .DS_Store
 .venv
-output
 bulk
+mocks
+output
