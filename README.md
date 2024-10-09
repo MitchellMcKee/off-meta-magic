@@ -1,13 +1,12 @@
-These are the back end functions that will data 
-scarpe the deck lists and filter out the data to 
+These are the back end functions that data 
+scarpe deck lists from TopDeck.gg
+
+First the last 6 months of commander tournaments
+gets fetched. Then this data is stored and filtered
 be stored in the database. This code will be 
 copied over to AWS lambda functions that get 
-called by cron jobs from an EC2 instance that
-host a MongoDB database. 
+called by a React front-end to supply a json file
+of card data to display.
 
-The MongoDB will be the source of truth for an S3
-bucket that contains the data for the most popular
-pages. Caching the most popular page data in an S3
-ensures scaleability for common pages. Less common
-data can still be fetched and generated, it will 
-be a different process. 
+The data includes MoxField links to cards played in
+5 or less tournament decks of a given commander.
